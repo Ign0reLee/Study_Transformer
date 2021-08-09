@@ -19,6 +19,7 @@ class PositionWiseFeedForwardLayer(nn.Module):
         out = self.fc2(out)
         return out
 
+
 class MultiHeadAttention(nn.Module):
     def __init__(self, d_model, d_embed, num_heads):
         super(MultiHeadAttention, self).__init__()
@@ -71,6 +72,31 @@ class MultiHeadAttention(nn.Module):
         attention_prob = self.prob(attention_score)
         out = torch.matmul(attention_prob, value)
         return out, attention_prob
+
+class BiPartiteAttention(nn.Module):
+    
+    def __init__(self, d_model, d_embed, num_heads, duplex=False):
+        super(BiPartiteAttention, self).__init__()
+
+        self.gamma = nn.parameter.Parameter(torch.randint(size=(d_model, d_model)),requires_grad=True)
+        self.beta  = nn.parameter.Parameter(torch.randint(size=(d_model, d_model)),requires_grad=True)
+        self.mha = MultiHeadAttention(d_model=d_model, d_embed= d_embed, num_heads=num_heads)
+        self.duplex = duplex
+        self.norm = nn.LayerNorm()
+    
+    def w(self, x):
+        mean = torch.mean(x)
+        std  = torch.std(x)
+        return (x - mean) / std
+    
+    def forward(self, query, key, value, mask=None):
+
+        # query : X
+        # key   : Y
+        # value : Y
+
+        attn = self.mha(query, key, value)
+        u_a  = self.norm(query + attn)
 
 
 class EncoderLayer(nn.Module):
